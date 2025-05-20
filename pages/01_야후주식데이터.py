@@ -7,7 +7,6 @@ st.set_page_config(layout="wide", page_title="글로벌 시가총액 Top 10 주�
 
 st.title("🌍 글로벌 시가총액 Top 10 기업의 최근 1년 주가 변동")
 
-# 2024년 5월 기준 글로벌 시가총액 Top 10 (티커)
 top10 = {
     "Apple": "AAPL",
     "Microsoft": "MSFT",
@@ -21,25 +20,29 @@ top10 = {
     "TSMC": "TSM"
 }
 
-# 기간 설정: 최근 1년
 end_date = datetime.today()
 start_date = end_date - timedelta(days=365)
 
-# 데이터 다운로드
 st.info("데이터를 불러오는 중입니다. 잠시만 기다려주세요...")
 
-data = yf.download(list(top10.values()), start=start_date, end=end_date)['Adj Close']
+# 여러 티커를 동시에 받을 경우 MultiIndex 컬럼이 됨
+raw_data = yf.download(list(top10.values()), start=start_date, end=end_date)
 
-# Plotly 시각화
+# 'Adj Close' 레벨만 뽑아오기 (종목별 단일 인덱스)
+data = raw_data['Adj Close']
+
 fig = go.Figure()
 
 for name, ticker in top10.items():
-    fig.add_trace(go.Scatter(
-        x=data.index,
-        y=data[ticker],
-        mode='lines',
-        name=name
-    ))
+    if ticker in data.columns:
+        fig.add_trace(go.Scatter(
+            x=data.index,
+            y=data[ticker],
+            mode='lines',
+            name=name
+        ))
+    else:
+        st.warning(f"{name} ({ticker}) 데이터가 없습니다.")
 
 fig.update_layout(
     title="글로벌 시가총액 Top 10 기업 최근 1년 주가 변동 (Adj Close)",
